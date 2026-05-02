@@ -1,0 +1,32 @@
+/**
+ * Admin Panel Fonts Plugin - Stylesheet
+ * Handles the appearance of the font selector dropdown in the admin bar.
+ */
+
+/* Hide the default empty item and menu item text (we use custom HTML) */
+#wpadminbar .wp-admin-fonts-select .ab-empty-item,
+#wpadminbar .wp-admin-fonts-select .ab-item {
+    display: none;
+}
+
+/* Custom container for the font selector dropdown */
+#wpadminbar .wp-admin-fonts-select .change-panel-font-callback {
+    display: flex;
+    width: 220px;
+    flex-direction: column;
+    padding-inline: 6px;
+    gap: 6px;
+}
+
+/* Style the select element to match WordPress admin bar */
+#wpadminbar .wp-admin-fonts-select .change-panel-font-callback select {
+    padding-inline-start: 8px;
+}
+
+/* Message area for AJAX feedback (success/error) */
+#wp-admin-fonts-message {
+    font-size: 11px;
+    text-align: center;
+    color: #eee;
+    display: block;
+}
