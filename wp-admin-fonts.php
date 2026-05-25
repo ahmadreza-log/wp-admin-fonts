@@ -67,7 +67,7 @@ if (!class_exists('WordpressAdminFonts')) {
             $this->url = plugin_dir_url(__FILE__);
 
             // Load text domain for internationalization
-            add_action('init', [$this, 'loadTextdomain']);
+            add_action('init', [$this, 'i18n']);
 
             // Add font selector menu to the admin bar
             add_action('admin_bar_menu', [$this, 'menu'], 500);
@@ -86,7 +86,7 @@ if (!class_exists('WordpressAdminFonts')) {
         /**
          * Load plugin text domain for translations
          */
-        public function loadTextdomain(): void
+        public function i18n(): void
         {
             load_plugin_textdomain('admin-panel-fonts', false, dirname(plugin_basename(__FILE__)) . '/languages');
         }
@@ -118,6 +118,37 @@ if (!class_exists('WordpressAdminFonts')) {
         }
 
         /**
+         * Normalize font names for display (based on filename)
+         * @param string $font Font name (without extension)
+         * @return string Normalized font name
+         */
+        private function normalize(string $font): string
+        {
+            $list = [
+                'anjoman' => 'انجمن',
+                'artin' => 'آرتین',
+                'aviny' => 'آوینی',
+                'damavand' => 'دماوند',
+                'dana' => 'دانا',
+                'ebtekar' => 'ابتکار',
+                'emkan' => 'امکان',
+                'emkan-deco' => 'امکان دکو',
+                'emkan-inline' => 'امکان خطی',
+                'emkan-rounded' => 'امکان گردشده',
+                'farhang' => 'فرهنگ',
+                'golpayegani' => 'گلپایگانی',
+                'hamideh-saeian' => 'حمیده ساعیان',
+                'iran-kharazmi' => 'ایران خوارزمی',
+                'iran' => 'ایران',
+                'iran-rounded' => 'ایران گردشده',
+                'iransans-dn' => 'ایران‌سنس دست‌نویس',
+                'iransans' => 'ایران‌سنس',
+            ];
+
+            return $list[$font] ?? '';
+        }
+
+        /**
          * Generate the HTML dropdown with available fonts
          * @return string HTML markup
          */
@@ -132,7 +163,7 @@ if (!class_exists('WordpressAdminFonts')) {
 
             foreach ($fonts as $font => $path) {
                 $selected = selected($current, $font, false);
-                $display = str_replace(['-', '_'], ' ', ucwords($font));
+                $display = $this->normalize($font) ?: ucwords(str_replace(['-', '_'], ' ', $font));
                 $out .= sprintf(
                     '<option value="%s" %s>%s</option>',
                     esc_attr($font),
@@ -161,12 +192,13 @@ if (!class_exists('WordpressAdminFonts')) {
                     glob($this->dir . 'assets/fonts/*.woff2'),
                     glob($this->dir . 'assets/fonts/*.woff')
                 );
+                ksort($files);
 
                 foreach ($files as $file) {
                     $name = pathinfo(basename($file), PATHINFO_FILENAME);
                     $fonts[$name] = $file;
                 }
-                set_transient($cache, $fonts, DAY_IN_SECONDS);
+                set_transient($cache, $fonts, MINUTE_IN_SECONDS);
             }
 
             return $fonts;
@@ -200,6 +232,9 @@ if (!class_exists('WordpressAdminFonts')) {
             if (!empty($css)) {
                 wp_add_inline_style('wp-admin-fonts-style', $css);
             }
+
+            // Dequeue fonts from another source
+            wp_dequeue_style('elementor-one-admin-fonts');
         }
 
         /**
@@ -226,14 +261,22 @@ if (!class_exists('WordpressAdminFonts')) {
                 font-weight: 400;
                 font-style: normal;
             }
-            /* Apply font to all admin elements (RTL and LTR) */
-            body.rtl, body.wp-admin,
-            .rtl #wpadminbar *, .rtl h1, .rtl h2, .rtl h3, .rtl h4, .rtl h5, .rtl h6,
-            .rtl .media-frame, .rtl .media-frame .search,
-            .rtl .media-frame input, .rtl .media-frame select,
-            .rtl .media-frame textarea, .rtl .media-modal,
-            .rtl .quicktags-toolbar input, .rtl .wp-switch-editor,
-            .components-notice {
+            body.rtl, 
+            body.wp-admin,
+            body.rtl #wpadminbar *,
+            body.rtl :is(h1, h2, h3, h4, h5, h6),
+            body.rtl .media-frame,
+            body.rtl .media-frame :is(input, select, textarea, .search),
+            body.rtl .media-modal,
+            body.rtl .quicktags-toolbar input,
+            body.rtl .wp-switch-editor,
+            body.rtl .components-notice,
+            body.rtl :is(.MuiListItemText-primary, .MuiTypography-button),
+            body.rtl #wpcontent .wrap>h1.wp-heading-inline,
+            body.rtl #wpcontent .nav-tab-wrapper .nav-tab,
+            body.rtl #wpcontent .elementor-settings-form-page :is(h1, h2, h3, h4, h5, h6),
+            body.rtl .wp-core-ui select, 
+            body.rtl select{
                 font-family: '{$family}', '{$family} Fallback', sans-serif;
             }";
         }
